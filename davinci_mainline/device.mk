@@ -5,13 +5,6 @@
 
 TARGET_DEVICE_PATH := device/xiaomi/mi7150-mainline/davinci_mainline
 
-# Inherit options from mainline/qcom-common
-## SoC
-TARGET_QCOM_SOC := sm7150-aa
-## TODO: Bringup the corresponding hardware and remove the following definitions
-TARGET_SUPPORTS_SUSPEND := false
-include device/mainline/qcom-common/optional/options.mk
-
 # Inherit from parent
 $(call inherit-product, device/xiaomi/mi7150-mainline/device.mk)
 
@@ -46,3 +39,6 @@ PRODUCT_PACKAGES += \
     fstab.davinci.vendor_ramdisk \
     init.davinci.rc \
     ueventd.davinci.rc
+
+# SoC
+TARGET_QCOM_SOC := sm7150-aa
