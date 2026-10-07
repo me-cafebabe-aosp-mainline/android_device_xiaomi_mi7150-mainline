@@ -5,12 +5,16 @@
 
 ifeq ($(USES_DEVICE_XIAOMI_MI7150_MAINLINE),true)
 
+BOOTMGR_SHARED_LIBS_64_DIR := prebuilts/bootmgr/lib64
+BOOTMGR_TOOLS_64_EXEC_ENV := LD_LIBRARY_PATH=$(BOOTMGR_SHARED_LIBS_64_DIR) $(BOOTMGR_SHARED_LIBS_64_DIR)/ld-linux-x86-64.so.2
 BOOTMGR_TOOLS_BIN_DIR := prebuilts/bootmgr/tools/$(HOST_PREBUILT_TAG)/bin
+BOOTMGR_PATH_OVERRIDE := PATH=$(BOOTMGR_TOOLS_BIN_DIR):$$PATH
 
 GRUB_ARCH := arm64-efi
-GRUB_BOOT_EFI_PREBUILT := device/virt/virtio_arm64/bootmgr/grub/prebuilt/boot/BOOTAA64.EFI
+GRUB_EFI_BOOT_FILENAME := BOOTAA64.EFI
 GRUB_CONFIGS := $(DEVICE_PATH)/misc/grub.cfg
-GRUB_PREBUILT_DIR := prebuilts/bootmgr/grub/linux-arm64/$(GRUB_ARCH)
+GRUB_STANDALONE_CONFIGS := $(DEVICE_PATH)/misc/grub-standalone.cfg
+GRUB_PREBUILT_DIR := prebuilts/bootmgr/grub/$(HOST_PREBUILT_TAG)/$(GRUB_ARCH)
 
 ESP_OUT_DIR := $(TARGET_OUT_INTERMEDIATES)/ESP
 
@@ -20,7 +24,7 @@ INSTALLED_MI7150_ESPIMAGE_TARGET_INCLUDE_FILES := \
     $(PRODUCT_OUT)/vendor_boot.img
 
 INSTALLED_MI7150_ESPIMAGE_TARGET_DEPS := \
-    $(GRUB_BOOT_EFI_PREBUILT) \
+    $(GRUB_STANDALONE_CONFIGS) \
     $(GRUB_CONFIGS) \
     $(INSTALLED_MI7150_ESPIMAGE_TARGET_INCLUDE_FILES) \
     $(INSTALLED_KERNEL_TARGET)
@@ -46,7 +50,14 @@ define make-espimage-target
 	cp -r $(GRUB_PREBUILT_DIR)/lib/grub/$(GRUB_ARCH) $(ESP_OUT_DIR)/boot/grub/
 	cp $(GRUB_PREBUILT_DIR)/share/grub/unicode.pf2 $(ESP_OUT_DIR)/boot/grub/fonts/unicode.pf2
 
-	cp $(GRUB_BOOT_EFI_PREBUILT) $(ESP_OUT_DIR)/EFI/BOOT/
+	$(BOOTMGR_PATH_OVERRIDE) $(BOOTMGR_TOOLS_64_EXEC_ENV) $(GRUB_PREBUILT_DIR)/bin/grub-mkstandalone \
+		-d $(GRUB_PREBUILT_DIR)/lib/grub/$(GRUB_ARCH) \
+		--locales="" \
+		--fonts="" \
+		--format=$(GRUB_ARCH) \
+		--output=$(ESP_OUT_DIR)/EFI/BOOT/$(GRUB_EFI_BOOT_FILENAME) \
+		--modules="configfile disk fat part_gpt search" \
+		"boot/grub/grub.cfg=$(GRUB_STANDALONE_CONFIGS)"
 
 	touch $(ESP_OUT_DIR)/boot/grub/.is_esp_part_on_android_boot_device
 
